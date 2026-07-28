@@ -22,6 +22,7 @@ from .serializers import (
 from .services import (
     create_media_message,
     create_text_message,
+    delete_message,
     edit_message,
     get_private_storage,
 )
@@ -36,7 +37,7 @@ class MessageListCreateView(APIView):
             raise PermissionDenied("You do not have permission to access this chat.")
 
         messages = (
-            NormalMessage.objects.filter(chat=chat, is_deleted=False)
+            NormalMessage.objects.filter(chat=chat)
             .select_related("sender", "sender__tag")
             .order_by("sent_at", "pk")
         )
@@ -139,6 +140,24 @@ class MessageUpdateView(APIView):
             message, context={"request": request}
         )
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, chat_id, message_id):
+        chat = get_object_or_404(Chat, pk=chat_id)
+        if not can_access_chat(request.user, chat):
+            raise PermissionDenied("You do not have permission to access this chat.")
+
+        try:
+            delete_message(
+                request.user,
+                chat,
+                message_id,
+            )
+        except DjangoValidationError as exc:
+            raise ValidationError(_validation_error_detail(exc)) from exc
+        except DjangoPermissionDenied as exc:
+            raise PermissionDenied(str(exc)) from exc
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AttachmentDownloadView(APIView):

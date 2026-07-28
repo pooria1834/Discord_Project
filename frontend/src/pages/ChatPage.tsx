@@ -85,6 +85,12 @@ function ChatPage({ chatId, title, subtitle }: ChatPageProps) {
     );
   }
 
+  function handleMessageDeleted(deletedMessageId: number) {
+    setMessages((currentMessages) =>
+      currentMessages.filter((msg) => msg.id !== deletedMessageId)
+    );
+  }
+
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-card/50 shadow-2xl shadow-black/30 backdrop-blur-sm">
       <header className="flex items-center gap-4 border-b border-border px-5 py-4 sm:px-6">
@@ -140,7 +146,12 @@ function ChatPage({ chatId, title, subtitle }: ChatPageProps) {
         ) : null}
 
         {!isLoading && !error && messages.length > 0 ? (
-          <MessageList messages={messages} currentUser={user} onMessageEdited={handleMessageEdited} />
+          <MessageList
+            messages={messages}
+            currentUser={user}
+            onMessageEdited={handleMessageEdited}
+            onMessageDeleted={handleMessageDeleted}
+          />
         ) : null}
       </div>
 

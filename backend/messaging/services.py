@@ -77,6 +77,38 @@ def create_media_message(sender, chat, uploaded_file, content=""):
         raise
 
 
+def delete_message(sender, chat, message_id):
+    """Soft delete a message and permanently remove its attachment from storage."""
+    _validate_sender(sender)
+
+    try:
+        message = NormalMessage.objects.get(pk=message_id, chat=chat, is_deleted=False)
+    except NormalMessage.DoesNotExist:
+        raise ValidationError({"message": "Message not found."})
+
+    if message.sender_id != sender.pk:
+        raise PermissionDenied("You can only delete your own messages.")
+
+    storage = get_private_storage()
+    old_file_to_delete = None
+    old_storage_path = None
+
+    if message.file:
+        old_file_to_delete = message.file
+        old_storage_path = message.file.storage_path
+        message.file = None
+
+    message.is_deleted = True
+
+    with transaction.atomic():
+        message.save(update_fields=['is_deleted', 'file'])
+
+        if old_file_to_delete:
+            if old_storage_path:
+                storage.delete(old_storage_path)
+            old_file_to_delete.delete()
+
+
 def edit_message(sender, chat, message_id, content=None, uploaded_file=None, remove_file=False):
     """Edit an existing message, modifying its content and/or file attachment."""
     _validate_sender(sender)

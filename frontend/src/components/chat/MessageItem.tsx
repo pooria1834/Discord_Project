@@ -1,6 +1,6 @@
-import { Pencil, X, Check, Paperclip, FileText } from "lucide-react";
+import { Pencil, X, Check, Paperclip, FileText, Trash2 } from "lucide-react";
 import { useState, useRef, useEffect, useId, type KeyboardEvent } from "react";
-import { editMessage } from "../../api/chats";
+import { editMessage, deleteMessage } from "../../api/chats";
 import type { ChatMessage } from "../../types/chat";
 import type { User } from "../../types/user";
 import AttachmentLink from "./AttachmentLink";
@@ -10,6 +10,7 @@ type MessageItemProps = {
   message: ChatMessage;
   currentUser: User | null;
   onMessageEdited: (message: ChatMessage) => void;
+  onMessageDeleted: (messageId: number) => void;
 };
 
 function displayName(message: ChatMessage) {
@@ -29,7 +30,7 @@ function formatSentAt(value: string) {
   }).format(date);
 }
 
-function MessageItem({ message, currentUser, onMessageEdited }: MessageItemProps) {
+function MessageItem({ message, currentUser, onMessageEdited, onMessageDeleted }: MessageItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -57,6 +58,21 @@ function MessageItem({ message, currentUser, onMessageEdited }: MessageItemProps
 
   const willHaveFile = (!removeFile && message.attachment) || selectedFile;
   const canSave = Boolean(editContent.trim()) || Boolean(willHaveFile);
+
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!window.confirm("Are you sure you want to delete this message?")) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteMessage(message.chat, message.id);
+      onMessageDeleted(message.id);
+    } catch {
+      setError("Failed to delete message.");
+      setIsDeleting(false);
+    }
+  }
 
   async function handleSave() {
     const trimmed = editContent.trim();
@@ -281,17 +297,32 @@ function MessageItem({ message, currentUser, onMessageEdited }: MessageItemProps
         )}
 
         {canEdit && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className={`absolute -top-3 -right-3 rounded-full p-1.5 shadow-md opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 ${
-              isOwnMessage
-                ? "bg-primary text-white hover:bg-primary/90"
-                : "bg-card text-foreground hover:bg-accent border border-border"
-            }`}
-            aria-label="Edit message"
-          >
-            <Pencil className="size-3.5" />
-          </button>
+          <div className="absolute -top-3 -right-3 flex gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+            <button
+              onClick={() => setIsEditing(true)}
+              disabled={isDeleting}
+              className={`rounded-full p-1.5 shadow-md ${
+                isOwnMessage
+                  ? "bg-primary text-white hover:bg-primary/90"
+                  : "bg-card text-foreground hover:bg-accent border border-border"
+              }`}
+              aria-label="Edit message"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={`rounded-full p-1.5 shadow-md ${
+                isOwnMessage
+                  ? "bg-destructive text-white hover:bg-destructive/90"
+                  : "bg-card text-destructive hover:bg-accent border border-border"
+              }`}
+              aria-label="Delete message"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
         )}
       </article>
     </li>

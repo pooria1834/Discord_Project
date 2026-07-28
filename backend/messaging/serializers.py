@@ -35,18 +35,26 @@ class NormalMessageSerializer(serializers.ModelSerializer):
     chat = serializers.PrimaryKeyRelatedField(read_only=True)
     sender = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
 
     class Meta:
         model = NormalMessage
-        fields = ("id", "chat", "sender", "content", "sent_at", "attachment", "is_edited")
+        fields = ("id", "chat", "sender", "content", "sent_at", "attachment", "is_edited", "is_deleted")
+
+    def get_content(self, obj):
+        if obj.is_deleted:
+            return ""
+        return obj.content
 
     def get_sender(self, obj):
         if obj.sender is None:
             return None
+        if obj.is_deleted:
+            return None
         return PublicUserSerializer(obj.sender, context=self.context).data
 
     def get_attachment(self, obj):
-        if obj.file is None:
+        if obj.file is None or obj.is_deleted:
             return None
         return {
             "id": obj.file_id,
