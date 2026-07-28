@@ -40,6 +40,10 @@ export async function editMessage(
   }
 }
 
+export async function deleteMessage(chatId: number, messageId: number): Promise<void> {
+  await client.delete(`/api/chats/${chatId}/messages/${messageId}/`);
+}
+
 export async function getChatMessages(chatId: number): Promise<ChatMessage[]> {
   const response = await client.get<ChatMessage[]>(`/api/chats/${chatId}/messages/`);
   return response.data;

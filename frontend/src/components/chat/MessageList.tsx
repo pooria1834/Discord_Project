@@ -6,9 +6,10 @@ type MessageListProps = {
   messages: ChatMessage[];
   currentUser: User | null;
   onMessageEdited: (message: ChatMessage) => void;
+  onMessageDeleted: (messageId: number) => void;
 };
 
-function MessageList({ messages, currentUser, onMessageEdited }: MessageListProps) {
+function MessageList({ messages, currentUser, onMessageEdited, onMessageDeleted }: MessageListProps) {
   return (
     <ul className="grid gap-4">
       {messages.map((message) => (
@@ -17,6 +18,7 @@ function MessageList({ messages, currentUser, onMessageEdited }: MessageListProp
           message={message}
           currentUser={currentUser}
           onMessageEdited={onMessageEdited}
+          onMessageDeleted={onMessageDeleted}
         />
       ))}
     </ul>
